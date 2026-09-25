@@ -16,6 +16,7 @@ make O="$OUT" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" vendor/lito-perf_defco
 # ReSukiSU/SUSFS feature set used by the validated build.
 cat >> "$OUT/.config" <<'EOF'
 CONFIG_KSU=y
+CONFIG_KSU_MANUAL_HOOK=y
 CONFIG_KSU_MULTI_MANAGER_SUPPORT=y
 CONFIG_KSU_SUSFS=y
 CONFIG_KSU_SUSFS_SUS_PATH=y
