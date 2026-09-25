@@ -26,7 +26,7 @@ index 70ffffea3..776e82a2f 100644
  #include <linux/rcupdate.h>
  #include "input-compat.h"
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_input_handle_event(unsigned int *type,
 +				unsigned int *code, int *value);
 +#endif
@@ -38,7 +38,7 @@ index 70ffffea3..776e82a2f 100644
  		 unsigned int type, unsigned int code, int value)
  {
  	unsigned long flags;
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_input_handle_event(&type, &code, &value);
 +	#endif
  
@@ -124,7 +124,7 @@ index eef84ebca..e8d59f68a 100644
  
  #include <trace/events/sched.h>
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
 +				void *argv, void *envp, int *flags);
 +extern int ksu_handle_post_execveat(int *fd, struct filename **filename_ptr,
@@ -145,7 +145,7 @@ index eef84ebca..e8d59f68a 100644
 +				      struct user_arg_ptr envp,
 +				      int flags)
  {
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	int retval;
 +	ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
 +	retval = __do_execve_file(fd, filename, argv, envp, flags, NULL);
@@ -494,7 +494,7 @@ index 13d70db56..7e376c0c1 100644
  #include "internal.h"
  #include <trace/hooks/syscall_check.h>
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
 +				int *mode, int *flags);
 +#endif
@@ -506,7 +506,7 @@ index 13d70db56..7e376c0c1 100644
  
  SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
  {
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
 +	#endif
  	return do_faccessat(dfd, filename, mode);
@@ -682,7 +682,7 @@ index ec2d20ddd..284ea4b79 100644
  #include <linux/uaccess.h>
  #include <asm/unistd.h>
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
 +				size_t *count_ptr);
 +#endif
@@ -694,7 +694,7 @@ index ec2d20ddd..284ea4b79 100644
  
  SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
  {
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_sys_read(fd, &buf, &count);
 +	#endif
  	return ksys_read(fd, buf, count);
@@ -735,7 +735,7 @@ index 376543199..9704d1d8a 100644
  #include <linux/uaccess.h>
  #include <asm/unistd.h>
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_stat(int *dfd, const char __user **filename_user,
 +				int *flags);
 +#endif
@@ -773,7 +773,7 @@ index 376543199..9704d1d8a 100644
  	struct kstat stat;
  	int error;
 -
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_stat(&dfd, &filename, &flag);
 +	#endif
  	error = vfs_fstatat(dfd, filename, &stat, flag);
@@ -784,7 +784,7 @@ index 376543199..9704d1d8a 100644
  	struct kstat stat;
  	int error;
 -
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_stat(&dfd, &filename, &flag);
 +	#endif
  	error = vfs_fstatat(dfd, filename, &stat, flag);
@@ -873,7 +873,7 @@ index 3a87fee47..cc239d35f 100644
  #include <linux/syscore_ops.h>
  #include <linux/uaccess.h>
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd,
 +				void __user **arg);
 +#endif
@@ -886,7 +886,7 @@ index 3a87fee47..cc239d35f 100644
  	char buffer[256];
  	int ret = 0;
 -
-+	#ifdef CONFIG_KSU_SUSFS
++	#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
 +	#endif
  	/* We only trust the superuser with rebooting the system. */
@@ -900,7 +900,7 @@ index fa98ba2e9..fc345a794 100644
  
  #include "uid16.h"
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid);
 +#endif
 +
@@ -915,7 +915,7 @@ index fa98ba2e9..fc345a794 100644
  	int retval;
  	kuid_t kruid, keuid, ksuid;
  
-+#ifdef CONFIG_KSU_SUSFS
++#ifdef CONFIG_KSU_MANUAL_HOOK
 +	ksu_handle_setresuid(ruid, euid, suid);
 +#endif
 +
