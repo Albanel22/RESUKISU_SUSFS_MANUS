@@ -455,12 +455,12 @@ index 4a69b9107..483415fc8 100644
  	}
 +
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-+	// current->android_kabi_reserved3 -> check if current process is zygote 
++	// current->android_kabi_reserved3 -> check if current process is zygote
 +	// current->android_kabi_reserved4 -> to record last valid fake mnt id to zygote pid
 +	// q->mnt.android_kabi_reserved1 -> fake mnt id
 +	// q->mnt.android_kabi_reserved2 -> fake mnt group id (peer id)
 +
-+	// Here We are only interested in processes of which original mnt namespace belongs to zygote 
++	// Here We are only interested in processes of which original mnt namespace belongs to zygote
 +	// Also we just make use of existing 'p' and 'q' mount pointer, no need to delcare extra mount pointer
 +	if (likely(current->android_kabi_reserved3 & 1)) {
 +		first_entry_mnt_id = list_first_entry(&new_ns->list, struct mount, mnt_list)->mnt_id;
