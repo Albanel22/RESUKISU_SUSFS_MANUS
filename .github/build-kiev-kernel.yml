@@ -2,7 +2,7 @@ name: Build kiev ReSukiSU SUSFS kernel (safe)
 
 on:
   workflow_dispatch:
-  
+
 permissions:
   contents: read
 
