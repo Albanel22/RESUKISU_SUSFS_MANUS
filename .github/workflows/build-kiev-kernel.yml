@@ -2,11 +2,6 @@ name: Build kiev ReSukiSU SUSFS kernel
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/build-kiev-kernel.yml'
-      - 'integration/**'
-      - 'scripts/**'
 
 permissions:
   contents: read
