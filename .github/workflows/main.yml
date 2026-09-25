@@ -1,4 +1,4 @@
-name: Build kiev ReSukiSU SUSFS kernel (safe)
+name: Build kiev ReSukiSU manual-hooks kernel (safe)
 
 on:
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
           git -C "$KERNEL_DIR" checkout --detach "$SOURCE_COMMIT"
           test "$(git -C "$KERNEL_DIR" rev-parse HEAD)" = "$SOURCE_COMMIT"
 
-      - name: Prepare pinned ReSukiSU/SUSFS integration
+      - name: Prepare pinned ReSukiSU manual-hooks integration
         run: |
           set -Eeuo pipefail
           ROOT="$ROOT" KERNEL_DIR="$KERNEL_DIR" BUNDLE_DIR="$GITHUB_WORKSPACE" \
@@ -61,7 +61,7 @@ jobs:
           test "$(find "$KERNEL_DIR/out" -type f -name '*.ko' | wc -l)" -gt 0
           test ! -e "$KERNEL_DIR/fs/Makefile.rej"
 
-      - name: Package reproducible build artifacts (not a flashable boot.img)
+      - name: Package reproducible manual-hooks build artifacts (not a flashable boot.img)
         run: |
           set -Eeuo pipefail
           mkdir -p "$ROOT/artifacts"
@@ -72,10 +72,10 @@ jobs:
             tar --null -T - -czf "$ROOT/artifacts/modules.tar.gz"
           sha256sum "$ROOT/artifacts"/* | tee "$ROOT/artifacts/SHA256SUMS"
 
-      - name: Upload safe build artifacts
+      - name: Upload manual-hooks build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kiev-resukisu-susfs-safe-${{ github.run_number }}
+          name: kiev-resukisu-manual-hooks-${{ github.run_number }}
           if-no-files-found: error
           retention-days: 14
           path: |
