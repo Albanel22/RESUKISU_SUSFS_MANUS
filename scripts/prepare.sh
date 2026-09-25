@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+
 ROOT="${ROOT:-$PWD}"
 KERNEL_DIR="${KERNEL_DIR:-$ROOT/kernel}"
 BUNDLE_DIR="${BUNDLE_DIR:-$ROOT}"
