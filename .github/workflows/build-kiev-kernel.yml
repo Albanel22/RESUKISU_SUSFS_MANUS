@@ -1,4 +1,4 @@
-name: Build kiev ReSukiSU manual-hooks kernel (safe)
+name: Build kiev ReSukiSU manual-hooks kernel
 
 on:
   workflow_dispatch:
@@ -21,7 +21,10 @@ env:
   RESUKISU_COMMIT: 0e4698951b8e0e1cb997e46f2049c691869a4f45
   JOBS: '2'
   MKBOOTIMG_COMMIT: 40a19c4c5ffe8b86c6c61318c8aa4ffe35d6e7ad
-  AVBTOOL_COMMIT: ba9d77598670f4e221490aa0e7aa9b27564cf2fb
+  BOOT_IMAGE_URL: https://mirrorbits.lineageos.org/full/kiev/20260920/boot.img
+  BOOT_IMAGE_SHA256: f7938eb61b59df097d1720dc20495db9ad663a3491f94fb3759b1106a5579c3e
+  DTBO_IMAGE_URL: https://mirrorbits.lineageos.org/full/kiev/20260920/dtbo.img
+  DTBO_IMAGE_SHA256: 323789569f56ba30d00f1372e6f4965702a5a294c7253a81a9ff7f0a7e984e1c
 
 jobs:
   build:
@@ -69,52 +72,42 @@ jobs:
           test "$(find "$KERNEL_DIR/out" -type f -name '*.ko' | wc -l)" -gt 0
           test ! -e "$KERNEL_DIR/fs/Makefile.rej"
 
-      - name: Rebuild and AVB-sign complete boot.img
-        env:
-          BOOT_IMAGE_URL: ${{ secrets.KIEV_BOOT_IMAGE_URL }}
-          BOOT_IMAGE_SHA256: ${{ secrets.KIEV_BOOT_IMAGE_SHA256 }}
-          AVB_KEY_B64: ${{ secrets.KIEV_AVB_KEY_B64 }}
-          AVB_ALGORITHM: ${{ secrets.KIEV_AVB_ALGORITHM }}
+      - name: Download official boot and dtbo inputs
         run: |
           set -Eeuo pipefail
-          test -n "$BOOT_IMAGE_URL" || { echo 'Missing secret KIEV_BOOT_IMAGE_URL' >&2; exit 1; }
-          test -n "$BOOT_IMAGE_SHA256" || { echo 'Missing secret KIEV_BOOT_IMAGE_SHA256' >&2; exit 1; }
-          test -n "$AVB_KEY_B64" || { echo 'Missing secret KIEV_AVB_KEY_B64' >&2; exit 1; }
           mkdir -p "$ROOT/boot-tools" "$ROOT/boot-input" "$ROOT/artifacts"
           curl --fail --location --retry 3 "$BOOT_IMAGE_URL" -o "$ROOT/boot-input/reference-boot.img"
           printf '%s  %s\n' "$BOOT_IMAGE_SHA256" "$ROOT/boot-input/reference-boot.img" | sha256sum -c -
-          printf '%s' "$AVB_KEY_B64" | base64 --decode > "$ROOT/boot-tools/avb-key.pem"
-          chmod 600 "$ROOT/boot-tools/avb-key.pem"
+          curl --fail --location --retry 3 "$DTBO_IMAGE_URL" -o "$ROOT/boot-input/dtbo.img"
+          printf '%s  %s\n' "$DTBO_IMAGE_SHA256" "$ROOT/boot-input/dtbo.img" | sha256sum -c -
           curl --fail --location --retry 3 -o "$ROOT/boot-tools/unpack_bootimg.py" \
             "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/unpack_bootimg.py"
           curl --fail --location --retry 3 -o "$ROOT/boot-tools/mkbootimg.py" \
             "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/mkbootimg.py"
-          curl --fail --location --retry 3 -o "$ROOT/boot-tools/avbtool.py" \
-            "https://raw.githubusercontent.com/LineageOS/android_external_avb/$AVBTOOL_COMMIT/avbtool.py"
           mkdir -p "$ROOT/boot-tools/gki"
           curl --fail --location --retry 3 -o "$ROOT/boot-tools/gki/generate_gki_certificate.py" \
             "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/gki/generate_gki_certificate.py"
           printf '%s  %s\n' \
             '021f2d960b2d3158a9df2ff6255f1140cebb09bc09f4886373438f2919559cd9' "$ROOT/boot-tools/mkbootimg.py" \
-            '50ef727dc41402430cf68933eaf5b7c7c71d91d2cc3cf908b2ea8e6e1faa4595' "$ROOT/boot-tools/unpack_bootimg.py" \
-            '5f1883a0834e8f8458d22104ce6e5becb7159ee0262fbda7d3d0fd0441de4720' "$ROOT/boot-tools/avbtool.py" | sha256sum -c -
+            '50ef727dc41402430cf68933eaf5b7c7c71d91d2cc3cf908b2ea8e6e1faa4595' "$ROOT/boot-tools/unpack_bootimg.py" | sha256sum -c -
+
+      - name: Build unsigned boot.img
+        run: |
+          set -Eeuo pipefail
           python3 scripts/package_bootimg.py \
             --reference "$ROOT/boot-input/reference-boot.img" \
             --kernel "$KERNEL_DIR/out/arch/arm64/boot/Image" \
             --unpack-tool "$ROOT/boot-tools/unpack_bootimg.py" \
             --mkbootimg-tool "$ROOT/boot-tools/mkbootimg.py" \
-            --avbtool "$ROOT/boot-tools/avbtool.py" \
-            --avb-key "$ROOT/boot-tools/avb-key.pem" \
-            --avb-algorithm "${AVB_ALGORITHM:-SHA256_RSA2048}" \
             --expected-reference-sha256 "$BOOT_IMAGE_SHA256" \
-            --output "$ROOT/artifacts/boot.img"
-          python3 "$ROOT/boot-tools/avbtool.py" info_image --image "$ROOT/artifacts/boot.img" > "$ROOT/artifacts/boot.avb-info.txt"
-          test "$(stat -c%s "$ROOT/artifacts/boot.img")" = "$(stat -c%s "$ROOT/boot-input/reference-boot.img")"
+            --output "$ROOT/artifacts/boot-unsigned.img"
+          cp "$ROOT/boot-input/dtbo.img" "$ROOT/artifacts/dtbo.img"
+          test -s "$ROOT/artifacts/boot-unsigned.img"
+          test -s "$ROOT/artifacts/dtbo.img"
 
       - name: Package reproducible manual-hooks build artifacts
         run: |
           set -Eeuo pipefail
-          mkdir -p "$ROOT/artifacts"
           cp "$KERNEL_DIR/out/arch/arm64/boot/Image" "$ROOT/artifacts/Image"
           cp "$KERNEL_DIR/out/.config" "$ROOT/artifacts/kernel.config"
           cp "$KERNEL_DIR/out/KERNELRELEASE" "$ROOT/artifacts/KERNELRELEASE"
@@ -129,8 +122,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: |
-            work/artifacts/boot.img
-            work/artifacts/boot.avb-info.txt
+            work/artifacts/boot-unsigned.img
+            work/artifacts/dtbo.img
             work/artifacts/Image
             work/artifacts/kernel.config
             work/artifacts/KERNELRELEASE

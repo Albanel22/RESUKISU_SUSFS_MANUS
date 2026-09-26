@@ -61,7 +61,7 @@ Le patch fourni dans l’archive initiale échoue actuellement sur `fs/Makefile`
 
 ## À propos du boot.img
 
-Le prochain chantier doit utiliser une chaîne vérifiée `unpack_bootimg` + `mkbootimg` + `avbtool`, adaptée au header v2 et à la politique AVB de l’appareil. Le script `scripts/repack_bootimg.py` présent ici refuse explicitement l’ancien chemin manuel.
+Le workflow utilise une chaîne vérifiée `unpack_bootimg` + `mkbootimg`, adaptée au header v2 de kiev. Le script `scripts/repack_bootimg.py` présent ici refuse explicitement l’ancien chemin manuel.
 
 Ne flashez pas directement `Image` comme s’il s’agissait d’un `boot.img`. Conservez une image boot officielle de restauration correspondant exactement à la version LineageOS installée.
 
@@ -78,15 +78,8 @@ Ne flashez pas directement `Image` comme s’il s’agissait d’un `boot.img`. 
 
 Attention: cette validation utilise ReSukiSU `main`, car le commit historique `0e4698951b8e0e1cb997e46f2049c691869a4f45` n'est plus récupérable depuis les références publiques GitHub.
 
-## Génération automatique de `boot.img` signé AVB
+## Artefacts de boot
 
-Le workflow reconstruit maintenant le `boot.img` complet à partir d'une image de référence : kernel compilé, ramdisk et DTB sont extraits puis réassemblés avec les outils AOSP épinglés. L'image est ensuite signée avec `avbtool` et la clé AVB fournie par GitHub Actions.
+Le workflow télécharge et vérifie les images officielles kiev du 20 septembre 2026 : `boot.img` et `dtbo.img`. Il remplace le kernel dans le conteneur boot v2 et produit `boot-unsigned.img`. Le `dtb` intégré au boot v2 est conservé ; `dtbo.img` est une partition séparée et est publié séparément.
 
-Configurer dans **Settings → Secrets and variables → Actions → New repository secret** :
-
-- `KIEV_BOOT_IMAGE_URL` : URL HTTPS de l'image `boot.img` de référence correspondant exactement au téléphone/build ciblé ;
-- `KIEV_BOOT_IMAGE_SHA256` : SHA-256 de cette image de référence ;
-- `KIEV_AVB_KEY_B64` : clé privée AVB PEM encodée en base64 ;
-- `KIEV_AVB_ALGORITHM` : optionnel, par défaut `SHA256_RSA2048`.
-
-La clé privée ne doit jamais être commitée dans le dépôt. Le workflow s'arrête explicitement si les trois secrets obligatoires ne sont pas présents ou si le SHA-256 de l'image téléchargée ne correspond pas. La clé AVB doit être autorisée par le bootloader de l'appareil ; une signature avec une clé de test ne rend pas l'image flashable.
+Le workflow ne demande aucune clé ni aucun secret AVB. Les artefacts publiés sont : `boot-unsigned.img`, `dtbo.img`, `Image`, `kernel.config`, `KERNELRELEASE`, `modules.tar.gz`, `SHA256SUMS` et `build.log`.
