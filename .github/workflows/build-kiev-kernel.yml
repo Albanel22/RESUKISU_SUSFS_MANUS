@@ -20,7 +20,9 @@ env:
   RESUKISU_URL: https://github.com/ReSukiSU/ReSukiSU.git
   RESUKISU_COMMIT: 0e4698951b8e0e1cb997e46f2049c691869a4f45
   JOBS: '2'
-  MKBOOTIMG_COMMIT: 40a19c4c5ffe8b86c6c61318c8aa4ffe35d6e7ad
+  MAGISKBOOT_APK_URL: https://github.com/topjohnwu/Magisk/releases/download/v27.0/Magisk-v27.0.apk
+  MAGISKBOOT_APK_SHA256: f511bd33d3242911d05b0939f910a3133ef2ba0e0ff1e098128f9f3cd0c16610
+  MAGISKBOOT_SHA256: b5e3c57d26735efb4e37a058cf21e6b8c1db2cb1c832a7b1da0989cceb22cabe
   BOOT_IMAGE_URL: https://drive.usercontent.google.com/download?id=1VGr0svHFa5wO7gqrixXYIxiID_pL62Fo&export=download&confirm=t
   BOOT_IMAGE_SHA256: 9e0efeba95ebe9e6c82a0c9e8623f0eff93fecb9d6b6cf521b756732f0f86737
   DTBO_IMAGE_URL: https://drive.usercontent.google.com/download?id=10T-3NcfbZ4awKU7fIBx565CKknOCz_pi&export=download&confirm=t
@@ -39,7 +41,7 @@ jobs:
           set -Eeuo pipefail
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential cpio curl flex file \
-            gcc-aarch64-linux-gnu libelf-dev libssl-dev pahole perl python3 rsync
+            gcc-aarch64-linux-gnu libelf-dev libssl-dev pahole perl python3 rsync unzip
 
       - name: Fetch pinned tactile fork kernel
         run: |
@@ -80,16 +82,11 @@ jobs:
           printf '%s  %s\n' "$BOOT_IMAGE_SHA256" "$ROOT/boot-input/reference-boot.img" | sha256sum -c -
           curl --fail --location --retry 3 "$DTBO_IMAGE_URL" -o "$ROOT/boot-input/dtbo.img"
           printf '%s  %s\n' "$DTBO_IMAGE_SHA256" "$ROOT/boot-input/dtbo.img" | sha256sum -c -
-          curl --fail --location --retry 3 -o "$ROOT/boot-tools/unpack_bootimg.py" \
-            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/unpack_bootimg.py"
-          curl --fail --location --retry 3 -o "$ROOT/boot-tools/mkbootimg.py" \
-            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/mkbootimg.py"
-          mkdir -p "$ROOT/boot-tools/gki"
-          curl --fail --location --retry 3 -o "$ROOT/boot-tools/gki/generate_gki_certificate.py" \
-            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/gki/generate_gki_certificate.py"
-          printf '%s  %s\n' \
-            '021f2d960b2d3158a9df2ff6255f1140cebb09bc09f4886373438f2919559cd9' "$ROOT/boot-tools/mkbootimg.py" \
-            '50ef727dc41402430cf68933eaf5b7c7c71d91d2cc3cf908b2ea8e6e1faa4595' "$ROOT/boot-tools/unpack_bootimg.py" | sha256sum -c -
+          curl --fail --location --retry 3 "$MAGISKBOOT_APK_URL" -o "$ROOT/boot-tools/Magisk-v27.0.apk"
+          printf '%s  %s\n' "$MAGISKBOOT_APK_SHA256" "$ROOT/boot-tools/Magisk-v27.0.apk" | sha256sum -c -
+          unzip -p "$ROOT/boot-tools/Magisk-v27.0.apk" lib/x86_64/libmagiskboot.so > "$ROOT/boot-tools/magiskboot"
+          chmod 0755 "$ROOT/boot-tools/magiskboot"
+          printf '%s  %s\n' "$MAGISKBOOT_SHA256" "$ROOT/boot-tools/magiskboot" | sha256sum -c -
 
       - name: Build unsigned boot.img
         run: |
@@ -97,9 +94,9 @@ jobs:
           python3 scripts/package_bootimg.py \
             --reference "$ROOT/boot-input/reference-boot.img" \
             --kernel "$KERNEL_DIR/out/arch/arm64/boot/Image" \
-            --unpack-tool "$ROOT/boot-tools/unpack_bootimg.py" \
-            --mkbootimg-tool "$ROOT/boot-tools/mkbootimg.py" \
+            --magiskboot "$ROOT/boot-tools/magiskboot" \
             --expected-reference-sha256 "$BOOT_IMAGE_SHA256" \
+            --expected-magiskboot-sha256 "$MAGISKBOOT_SHA256" \
             --output "$ROOT/artifacts/boot-unsigned.img"
           cp "$ROOT/boot-input/dtbo.img" "$ROOT/artifacts/dtbo.img"
           test -s "$ROOT/artifacts/boot-unsigned.img"

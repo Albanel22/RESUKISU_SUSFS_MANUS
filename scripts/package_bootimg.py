@@ -1,69 +1,92 @@
 #!/usr/bin/env python3
-"""Rebuild an unsigned Android boot image with a replacement ARM64 kernel.
+"""Repack a kiev Android boot v2 image with Magiskboot.
 
-The kiev boot v2 image contains its own DTB.  dtbo.img is a separate
-partition artifact and is downloaded/published by the workflow separately.
-This script intentionally performs no AVB signing.
+Magiskboot is used because the kiev boot container is exactly 96 MiB and
+contains an AVB metadata/footer region that must remain structurally present.
+This script does not create or claim a new AVB signature; it only asks the
+pinned Magiskboot binary to unpack and repack the supplied reference image.
 """
 from __future__ import annotations
+
 import argparse
 import hashlib
 import os
 import shlex
+import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
 
+TARGET_SIZE = 100663296  # kiev boot partition: 96 MiB
 
-def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
+
+def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     print("+", " ".join(shlex.quote(x) for x in cmd), flush=True)
-    return subprocess.run(cmd, check=True, text=True, **kwargs)
+    return subprocess.run(cmd, cwd=cwd, check=True, text=True)
 
 
 def sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def fail(message: str) -> "NoReturn":
+    raise SystemExit(f"ERROR: {message}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reference", required=True, type=Path)
     ap.add_argument("--kernel", required=True, type=Path)
-    ap.add_argument("--unpack-tool", required=True, type=Path)
-    ap.add_argument("--mkbootimg-tool", required=True, type=Path)
+    ap.add_argument("--magiskboot", required=True, type=Path)
     ap.add_argument("--expected-reference-sha256", required=True)
+    ap.add_argument("--expected-magiskboot-sha256", required=True)
     ap.add_argument("--output", required=True, type=Path)
     args = ap.parse_args()
 
-    for p in (args.reference, args.kernel, args.unpack_tool, args.mkbootimg_tool):
-        if not p.is_file() or p.stat().st_size == 0:
-            raise SystemExit(f"missing or empty input: {p}")
-    actual = sha256(args.reference)
-    if actual.lower() != args.expected_reference_sha256.lower():
-        raise SystemExit(f"reference SHA-256 mismatch: expected {args.expected_reference_sha256}, got {actual}")
+    for path in (args.reference, args.kernel, args.magiskboot):
+        if not path.is_file() or path.stat().st_size == 0:
+            fail(f"missing or empty input: {path}")
+    if args.reference.stat().st_size != TARGET_SIZE:
+        fail(f"reference boot size must be {TARGET_SIZE}, got {args.reference.stat().st_size}")
+    if sha256(args.reference).lower() != args.expected_reference_sha256.lower():
+        fail("reference boot SHA-256 mismatch")
+    if sha256(args.magiskboot).lower() != args.expected_magiskboot_sha256.lower():
+        fail("magiskboot SHA-256 mismatch")
+    if args.reference.read_bytes()[:8] != b"ANDROID!":
+        fail("reference is not an Android boot image")
 
-    work = args.output.parent / ".bootimg-work"
-    work.mkdir(parents=True, exist_ok=True)
-    unpack_dir = work / "unpacked"
-    unpack_dir.mkdir(parents=True, exist_ok=True)
-    run([sys.executable, str(args.unpack_tool), "--boot_img", str(args.reference), "--out", str(unpack_dir)])
-    meta = run([
-        sys.executable, str(args.unpack_tool), "--boot_img", str(args.reference),
-        "--out", str(unpack_dir), "--format", "mkbootimg"
-    ], capture_output=True).stdout.strip()
-    mkargs = shlex.split(meta)
-    if "--kernel" not in mkargs or "--dtb" not in mkargs:
-        raise SystemExit("reference boot image must provide kernel and embedded dtb metadata")
-    mkargs[mkargs.index("--kernel") + 1] = str(args.kernel)
-    args.output.unlink(missing_ok=True)
-    mkargs += ["--output", str(args.output)]
-    os.environ["PYTHONPATH"] = str(args.mkbootimg_tool.parent) + os.pathsep + os.environ.get("PYTHONPATH", "")
-    run([sys.executable, str(args.mkbootimg_tool), *mkargs])
-    if not args.output.is_file() or args.output.stat().st_size == 0:
-        raise SystemExit("mkbootimg did not produce a non-empty output")
+    work = args.output.parent / ".magiskboot-work"
+    if work.exists():
+        shutil.rmtree(work)
+    work.mkdir(parents=True)
+    reference = work / "boot.img"
+    shutil.copy2(args.reference, reference)
+
+    run([str(args.magiskboot), "unpack", str(reference)], cwd=work)
+    unpacked_kernel = work / "kernel"
+    if not unpacked_kernel.is_file() or unpacked_kernel.stat().st_size == 0:
+        fail("magiskboot did not extract a kernel")
+    if work.joinpath("ramdisk.cpio").exists() is False:
+        fail("magiskboot did not extract ramdisk.cpio")
+
+    shutil.copy2(args.kernel, unpacked_kernel)
+    repacked = work / "new-boot.img"
+    run([str(args.magiskboot), "repack", str(reference), str(repacked)], cwd=work)
+    if not repacked.is_file() or repacked.stat().st_size != TARGET_SIZE:
+        fail(f"repacked boot must be exactly {TARGET_SIZE} bytes, got {repacked.stat().st_size if repacked.exists() else 0}")
+
+    data = repacked.read_bytes()
+    if data[:8] != b"ANDROID!":
+        fail("repacked output is not an Android boot image")
+    if data.rfind(b"AVBf") < TARGET_SIZE - 4096:
+        fail("repacked output does not retain the AVB footer region")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(repacked, args.output)
     print(f"boot_img={args.output}")
     print(f"boot_img_size={args.output.stat().st_size}")
     print(f"boot_img_sha256={sha256(args.output)}")
