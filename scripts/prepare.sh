@@ -56,6 +56,8 @@ for f in fs/open.c fs/stat.c fs/exec.c fs/read_write.c kernel/reboot.c kernel/sy
 done
 grep -q 'ksu_handle_faccessat' "$KERNEL_DIR/fs/open.c" || err "manual faccessat hook missing"
 grep -q 'ksu_handle_stat' "$KERNEL_DIR/fs/stat.c" || err "manual stat hook missing"
+grep -q 'ksu_handle_newfstat_ret' "$KERNEL_DIR/fs/stat.c" || err "manual newfstat return hook missing"
+grep -q 'ksu_handle_fstat64_ret' "$KERNEL_DIR/fs/stat.c" || err "manual fstat64 return hook missing"
 grep -q 'const char __user' "$KERNEL_DIR/fs/open.c" || err "manual faccessat ABI missing"
 grep -q 'const char __user' "$KERNEL_DIR/fs/stat.c" || err "manual stat ABI missing"
 git -C "$KERNEL_DIR" diff --check

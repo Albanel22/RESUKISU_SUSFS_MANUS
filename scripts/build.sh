@@ -5,7 +5,7 @@
 # This script is fail-closed:
 # - it enables CONFIG_KSU and CONFIG_KSU_MANUAL_HOOK;
 # - it disables CONFIG_KSU_SUSFS and SUSFS feature symbols;
-# - it requires the manual-hook source signatures for faccessat/stat;
+# - it requires the manual-hook source signatures for faccessat/stat and stat-return hooks;
 # - it refuses to compile if SUSFS is still selected in .config.
 set -Eeuo pipefail
 
@@ -131,6 +131,8 @@ printf '\n== Verifying manual-hook source integration ==\n'
 grep -Eq 'ksu_handle_execveat' fs/exec.c || err "missing manual execveat hook"
 grep -Eq 'ksu_handle_faccessat' fs/open.c || err "missing manual faccessat hook"
 grep -Eq 'ksu_handle_stat' fs/stat.c || err "missing manual stat hook"
+grep -Eq 'ksu_handle_newfstat_ret' fs/stat.c || err "missing manual newfstat return hook"
+grep -Eq 'ksu_handle_fstat64_ret' fs/stat.c || err "missing manual fstat64 return hook"
 grep -Eq 'ksu_handle_sys_read' fs/read_write.c || err "missing manual sys_read hook"
 grep -Eq 'ksu_handle_sys_reboot' kernel/reboot.c || err "missing manual sys_reboot hook"
 grep -Eq 'ksu_handle_setresuid' kernel/sys.c || err "missing manual setresuid hook"

@@ -1,5 +1,5 @@
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 8180531d9..dd8d73aa0 100644
+index 8180531d9d00..dd8d73aa0595 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
 @@ -251,4 +251,5 @@ source "drivers/fm/Kconfig"
@@ -9,7 +9,7 @@ index 8180531d9..dd8d73aa0 100644
 +source "drivers/kernelsu/Kconfig"
  endmenu
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 42d614449..a949c74b5 100644
+index 42d6144490ce..a949c74b56bc 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
 @@ -202,3 +202,5 @@ obj-$(CONFIG_WATCHDOG_CPU_CTX)	+= watchdog_cpu_ctx/
@@ -19,7 +19,7 @@ index 42d614449..a949c74b5 100644
 +
 +obj-$(CONFIG_KSU) += kernelsu/
 diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 70ffffea3..776e82a2f 100644
+index 70ffffea3e58..8f852660142b 100644
 --- a/drivers/input/input.c
 +++ b/drivers/input/input.c
 @@ -29,6 +29,11 @@
@@ -45,7 +45,7 @@ index 70ffffea3..776e82a2f 100644
  	if (is_event_supported(type, dev->evbit, EV_MAX)) {
  
 diff --git a/fs/Makefile b/fs/Makefile
-index e41cfd4fb..354b9b8e5 100644
+index b2a9387e8240..affe48807519 100644
 --- a/fs/Makefile
 +++ b/fs/Makefile
 @@ -15,6 +15,9 @@ obj-y :=	open.o read_write.o file_table.o super.o \
@@ -59,7 +59,7 @@ index e41cfd4fb..354b9b8e5 100644
  obj-y +=	buffer.o block_dev.o direct-io.o mpage.o
  else
 diff --git a/fs/dcache.c b/fs/dcache.c
-index ec69f8149..ec8f0136c 100644
+index ec69f8149e3d..ec8f0136c6b4 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
 @@ -2192,6 +2192,11 @@ struct dentry *__d_lookup_rcu(const struct dentry *parent,
@@ -88,7 +88,7 @@ index ec69f8149..ec8f0136c 100644
  		if (dentry->d_parent != parent)
  			goto next;
 diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 553a3f330..87c4ec5cc 100644
+index 553a3f3300ae..87c4ec5ccb13 100644
 --- a/fs/devpts/inode.c
 +++ b/fs/devpts/inode.c
 @@ -599,6 +599,11 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
@@ -117,7 +117,7 @@ index 553a3f330..87c4ec5cc 100644
  		return NULL;
  	return dentry->d_fsdata;
 diff --git a/fs/exec.c b/fs/exec.c
-index eef84ebca..e8d59f68a 100644
+index f0def1bcbdec..e1011dbe5b58 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -72,6 +72,13 @@
@@ -158,7 +158,7 @@ index eef84ebca..e8d59f68a 100644
  
  int do_execve_file(struct file *file, void *__argv, void *__envp)
 diff --git a/fs/inode.c b/fs/inode.c
-index 41b987c54..4fe11f311 100644
+index 41b987c54785..4fe11f31158c 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
 @@ -1664,6 +1664,11 @@ int generic_update_time(struct inode *inode, struct timespec64 *time, int flags)
@@ -186,7 +186,7 @@ index 41b987c54..4fe11f311 100644
  		generic_update_time;
  
 diff --git a/fs/namei.c b/fs/namei.c
-index ef741e36a..c98e5bc06 100644
+index ef741e36acf6..c98e5bc069fa 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
 @@ -1005,6 +1005,12 @@ static inline int may_follow_link(struct nameidata *nd)
@@ -411,7 +411,7 @@ index ef741e36a..c98e5bc06 100644
  	}
  
 diff --git a/fs/namespace.c b/fs/namespace.c
-index 4a69b9107..483415fc8 100644
+index 4a69b910710f..318d713ff321 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
 @@ -1091,6 +1091,22 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
@@ -487,7 +487,7 @@ index 4a69b9107..483415fc8 100644
  
  	if (rootmnt)
 diff --git a/fs/open.c b/fs/open.c
-index 13d70db56..7e376c0c1 100644
+index 13d70db567e0..a96cb145c3d5 100644
 --- a/fs/open.c
 +++ b/fs/open.c
 @@ -35,6 +35,11 @@
@@ -513,7 +513,7 @@ index 13d70db56..7e376c0c1 100644
  }
  
 diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-index 7f3787a6b..47f0a1488 100644
+index 7f3787a6b445..47f0a148857b 100644
 --- a/fs/overlayfs/inode.c
 +++ b/fs/overlayfs/inode.c
 @@ -156,6 +156,15 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
@@ -533,7 +533,7 @@ index 7f3787a6b..47f0a1488 100644
  	old_cred = ovl_override_creds(dentry->d_sb);
  	err = vfs_getattr(&realpath, stat, request_mask, flags);
 diff --git a/fs/overlayfs/readdir.c b/fs/overlayfs/readdir.c
-index 8cd914bb2..ae7ef7646 100644
+index 8cd914bb2d33..ae7ef76467cb 100644
 --- a/fs/overlayfs/readdir.c
 +++ b/fs/overlayfs/readdir.c
 @@ -916,7 +916,18 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
@@ -556,7 +556,7 @@ index 8cd914bb2..ae7ef7646 100644
  	if (IS_ERR(realfile)) {
  		kfree(od);
 diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 5ce71f60d..a54eae953 100644
+index 5ce71f60deb9..a54eae953b71 100644
 --- a/fs/overlayfs/super.c
 +++ b/fs/overlayfs/super.c
 @@ -307,6 +307,18 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
@@ -579,7 +579,7 @@ index 5ce71f60d..a54eae953 100644
  
  	err = vfs_statfs(&path, buf);
 diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 25b055c10..f22b4f0ea 100644
+index 25b055c10537..f22b4f0ea869 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
 @@ -362,8 +362,18 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
@@ -602,7 +602,7 @@ index 25b055c10..f22b4f0ea 100644
  	}
  
 diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
-index 5b8d065fa..329760e40 100644
+index 5b8d065fa83c..329760e401fc 100644
 --- a/fs/proc_namespace.c
 +++ b/fs/proc_namespace.c
 @@ -102,6 +102,11 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
@@ -675,7 +675,7 @@ index 5b8d065fa..329760e40 100644
  	if (sb->s_op->show_devname) {
  		seq_puts(m, "device ");
 diff --git a/fs/read_write.c b/fs/read_write.c
-index ec2d20ddd..284ea4b79 100644
+index ec2d20ddd766..14dbadca7f94 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
 @@ -25,6 +25,11 @@
@@ -701,7 +701,7 @@ index ec2d20ddd..284ea4b79 100644
  }
  
 diff --git a/fs/readdir.c b/fs/readdir.c
-index 3c5ce8a0d..650350bb8 100644
+index 3c5ce8a0ddc9..650350bb8a02 100644
 --- a/fs/readdir.c
 +++ b/fs/readdir.c
 @@ -23,6 +23,10 @@
@@ -728,22 +728,28 @@ index 3c5ce8a0d..650350bb8 100644
  	if (unlikely(buf->error))
  		return buf->error;
 diff --git a/fs/stat.c b/fs/stat.c
-index 376543199..9704d1d8a 100644
+index 376543199b5a..881d5f795138 100644
 --- a/fs/stat.c
 +++ b/fs/stat.c
-@@ -21,6 +21,11 @@
+@@ -21,6 +21,17 @@
  #include <linux/uaccess.h>
  #include <asm/unistd.h>
  
 +#ifdef CONFIG_KSU_MANUAL_HOOK
 +extern int ksu_handle_stat(int *dfd, const char __user **filename_user,
 +				int *flags);
++extern void ksu_handle_newfstat_ret(unsigned int *fd,
++					struct stat __user **statbuf_ptr);
++#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
++extern void ksu_handle_fstat64_ret(unsigned long *fd,
++					struct stat64 __user **statbuf_ptr);
++#endif
 +#endif
 +
  /**
   * generic_fillattr - Fill in the basic attributes from the inode struct
   * @inode: Inode to use as the source
-@@ -32,6 +37,24 @@
+@@ -32,6 +43,24 @@
   */
  void generic_fillattr(struct inode *inode, struct kstat *stat)
  {
@@ -768,7 +774,7 @@ index 376543199..9704d1d8a 100644
  	stat->dev = inode->i_sb->s_dev;
  	stat->ino = inode->i_ino;
  	stat->mode = inode->i_mode;
-@@ -359,7 +382,9 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
+@@ -359,7 +388,9 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
  {
  	struct kstat stat;
  	int error;
@@ -779,7 +785,27 @@ index 376543199..9704d1d8a 100644
  	error = vfs_fstatat(dfd, filename, &stat, flag);
  	if (error)
  		return error;
-@@ -509,7 +534,9 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+@@ -375,6 +406,9 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ 	if (!error)
+ 		error = cp_new_stat(&stat, statbuf);
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK
++	ksu_handle_newfstat_ret(&fd, &statbuf);
++#endif
+ 	return error;
+ }
+ 
+@@ -501,6 +535,9 @@ SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
+ 	if (!error)
+ 		error = cp_new_stat64(&stat, statbuf);
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK
++	ksu_handle_fstat64_ret(&fd, &statbuf);
++#endif
+ 	return error;
+ }
+ 
+@@ -509,7 +546,9 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
  {
  	struct kstat stat;
  	int error;
@@ -791,7 +817,7 @@ index 376543199..9704d1d8a 100644
  	if (error)
  		return error;
 diff --git a/fs/statfs.c b/fs/statfs.c
-index 29786598c..769d446e0 100644
+index 29786598c2b5..769d446e0c56 100644
 --- a/fs/statfs.c
 +++ b/fs/statfs.c
 @@ -93,6 +93,22 @@ int user_statfs(const char __user *pathname, struct kstatfs *st)
@@ -831,10 +857,10 @@ index 29786598c..769d446e0 100644
  }
  
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f50e0e36a..9c67c2c27 100644
+index 0286498d7a80..f73e8815e11c 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1524,6 +1524,10 @@ struct task_struct {
+@@ -1521,6 +1521,10 @@ struct task_struct {
  	ANDROID_KABI_RESERVE(5);
  	ANDROID_KABI_RESERVE(6);
  #else
@@ -846,7 +872,7 @@ index f50e0e36a..9c67c2c27 100644
  #endif
  
 diff --git a/include/linux/sched/user.h b/include/linux/sched/user.h
-index 39ad98c09..a492c2fd8 100644
+index 39ad98c09c58..a492c2fd8318 100644
 --- a/include/linux/sched/user.h
 +++ b/include/linux/sched/user.h
 @@ -6,6 +6,7 @@
@@ -866,7 +892,7 @@ index 39ad98c09..a492c2fd8 100644
  
  extern int uids_sysfs_init(void);
 diff --git a/kernel/reboot.c b/kernel/reboot.c
-index 3a87fee47..cc239d35f 100644
+index 3a87fee47d3a..5cd00e218b58 100644
 --- a/kernel/reboot.c
 +++ b/kernel/reboot.c
 @@ -17,6 +17,11 @@
@@ -893,7 +919,7 @@ index 3a87fee47..cc239d35f 100644
  	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
  		return -EPERM;
 diff --git a/kernel/sys.c b/kernel/sys.c
-index fa98ba2e9..fc345a794 100644
+index fa98ba2e9e39..2352b72126e7 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
 @@ -75,6 +75,14 @@
@@ -938,7 +964,7 @@ index fa98ba2e9..fc345a794 100644
  	if (copy_to_user(name, &tmp, sizeof(tmp)))
  		return -EFAULT;
 diff --git a/techpack/display/msm/dsi/dsi_display_mot_ext.c b/techpack/display/msm/dsi/dsi_display_mot_ext.c
-index 48201c441..544b0a9e5 100644
+index 48201c4413cd..544b0a9e553b 100644
 --- a/techpack/display/msm/dsi/dsi_display_mot_ext.c
 +++ b/techpack/display/msm/dsi/dsi_display_mot_ext.c
 @@ -43,7 +43,7 @@

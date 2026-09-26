@@ -64,3 +64,16 @@ Le patch fourni dans l’archive initiale échoue actuellement sur `fs/Makefile`
 Le prochain chantier doit utiliser une chaîne vérifiée `unpack_bootimg` + `mkbootimg` + `avbtool`, adaptée au header v2 et à la politique AVB de l’appareil. Le script `scripts/repack_bootimg.py` présent ici refuse explicitement l’ancien chemin manuel.
 
 Ne flashez pas directement `Image` comme s’il s’agissait d’un `boot.img`. Conservez une image boot officielle de restauration correspondant exactement à la version LineageOS installée.
+
+## Validation locale réussie
+
+- Kernel: `LineageOS/android_kernel_motorola_sm8250`
+- Kernel commit: `c21b90c6860eeade8da37ea1212aa6135cf99e1f`
+- ReSukiSU commit testé: `0e4698951b8e0e1cb997e46f2049c691869a4f45` (`main`)
+- Mode: `CONFIG_KSU_MANUAL_HOOK=y`
+- SUSFS: désactivé
+- Résultat: compilation complète réussie
+- Kernel release: `4.19.325-cip136-st20-perf-gc21b90c6860e-dirty`
+- Image SHA-256: `26050b844189f543fd99f8e6027faea51229febb8332fbe8bc7f74974dfa52b9`
+
+Attention: cette validation utilise ReSukiSU `main`, car le commit historique `0e4698951b8e0e1cb997e46f2049c691869a4f45` n'est plus récupérable depuis les références publiques GitHub.

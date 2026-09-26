@@ -1,0 +1,96 @@
+name: Build kiev ReSukiSU manual-hooks kernel (safe)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-kiev-kernel.yml'
+      - 'integration/**'
+      - 'scripts/**'
+      - 'README.md'
+
+permissions:
+  contents: read
+
+env:
+  ROOT: ${{ github.workspace }}/work
+  KERNEL_DIR: ${{ github.workspace }}/work/kernel
+  SOURCE_URL: https://github.com/LineageOS/android_kernel_motorola_sm8250
+  SOURCE_COMMIT: c21b90c6860eeade8da37ea1212aa6135cf99e1f
+  RESUKISU_URL: https://github.com/ReSukiSU/ReSukiSU.git
+  RESUKISU_COMMIT: 90b4a4c70f70c835b01c2be6deac58ee3c0cb4c2
+  JOBS: '2'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout kit
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential cpio flex file \
+            gcc-aarch64-linux-gnu libelf-dev libssl-dev pahole perl python3 rsync
+
+      - name: Fetch pinned kernel
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$ROOT"
+          git clone --filter=blob:none --no-checkout "$SOURCE_URL" "$KERNEL_DIR"
+          git -C "$KERNEL_DIR" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$KERNEL_DIR" checkout --detach "$SOURCE_COMMIT"
+          test "$(git -C "$KERNEL_DIR" rev-parse HEAD)" = "$SOURCE_COMMIT"
+
+      - name: Prepare pinned ReSukiSU manual-hooks integration
+        run: |
+          set -Eeuo pipefail
+          ROOT="$ROOT" KERNEL_DIR="$KERNEL_DIR" BUNDLE_DIR="$GITHUB_WORKSPACE" \
+            SOURCE_COMMIT="$SOURCE_COMMIT" RESUKISU_URL="$RESUKISU_URL" \
+            RESUKISU_COMMIT="$RESUKISU_COMMIT" bash scripts/prepare.sh
+
+      - name: Configure and compile raw Image plus modules
+        run: |
+          set -Eeuo pipefail
+          ROOT="$ROOT" KERNEL_DIR="$KERNEL_DIR" JOBS="$JOBS" \
+            bash scripts/build.sh
+
+      - name: Validate raw kernel artifact
+        run: |
+          set -Eeuo pipefail
+          KERNEL="$KERNEL_DIR/out/arch/arm64/boot/Image"
+          test -s "$KERNEL"
+          file "$KERNEL" | grep -q 'Linux kernel ARM64 boot executable Image'
+          test "$(find "$KERNEL_DIR/out" -type f -name '*.ko' | wc -l)" -gt 0
+          test ! -e "$KERNEL_DIR/fs/Makefile.rej"
+
+      - name: Package reproducible manual-hooks build artifacts (not a flashable boot.img)
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$ROOT/artifacts"
+          cp "$KERNEL_DIR/out/arch/arm64/boot/Image" "$ROOT/artifacts/Image"
+          cp "$KERNEL_DIR/out/.config" "$ROOT/artifacts/kernel.config"
+          cp "$KERNEL_DIR/out/KERNELRELEASE" "$ROOT/artifacts/KERNELRELEASE"
+          find "$KERNEL_DIR/out" -type f -name '*.ko' -print0 | \
+            tar --null -T - -czf "$ROOT/artifacts/modules.tar.gz"
+          sha256sum "$ROOT/artifacts"/* | tee "$ROOT/artifacts/SHA256SUMS"
+
+      - name: Upload manual-hooks build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiev-resukisu-manual-hooks-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            work/artifacts/Image
+            work/artifacts/kernel.config
+            work/artifacts/KERNELRELEASE
+            work/artifacts/modules.tar.gz
+            work/artifacts/SHA256SUMS
+            work/build.log
+
+      # Intentionally no boot.img upload. The previous Python repacker was
+      # incompatible with this device's Android boot v2 + AVB image.
