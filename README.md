@@ -39,7 +39,7 @@ Puis :
 | Élément | Valeur |
 |---|---|
 | Kernel | `LineageOS/android_kernel_motorola_sm8250` |
-| Commit kernel | `c21b90c6860eeade8da37ea1212aa6135cf99e1f` |
+| Commit kernel | `a49e18994c494d71647f675df48e5c7349580747` |
 | ReSukiSU | `90b4a4c70f70c835b01c2be6deac58ee3c0cb4c2` |
 | Defconfig | `vendor/lito-perf_defconfig` |
 | Architecture | `arm64` |
@@ -68,7 +68,7 @@ Ne flashez pas directement `Image` comme s’il s’agissait d’un `boot.img`. 
 ## Validation locale réussie
 
 - Kernel: `LineageOS/android_kernel_motorola_sm8250`
-- Kernel commit: `c21b90c6860eeade8da37ea1212aa6135cf99e1f`
+- Kernel commit: `a49e18994c494d71647f675df48e5c7349580747`
 - ReSukiSU commit testé: `0e4698951b8e0e1cb997e46f2049c691869a4f45` (`main`)
 - Mode: `CONFIG_KSU_MANUAL_HOOK=y`
 - SUSFS: désactivé
@@ -83,3 +83,8 @@ Attention: cette validation utilise ReSukiSU `main`, car le commit historique `0
 Le workflow télécharge et vérifie les images officielles kiev du 20 septembre 2026 : `boot.img` et `dtbo.img`. Il remplace le kernel dans le conteneur boot v2 et produit `boot-unsigned.img`. Le `dtb` intégré au boot v2 est conservé ; `dtbo.img` est une partition séparée et est publié séparément.
 
 Le workflow ne demande aucune clé ni aucun secret AVB. Les artefacts publiés sont : `boot-unsigned.img`, `dtbo.img`, `Image`, `kernel.config`, `KERNELRELEASE`, `modules.tar.gz`, `SHA256SUMS` et `build.log`.
+
+
+## Source kernel tactile
+
+Le build utilise le fork tactile `Albanel22/android_kernel_motorola_sm8250`, branche `lineage-23.2-tactile`, épinglé au commit `a49e18994c494d71647f675df48e5c7349580747`. Ce fork est utilisé car il contient l’état du pilote tactile validé sur l’appareil.

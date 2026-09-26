@@ -9,8 +9,8 @@ permissions:
 env:
   ROOT: ${{ github.workspace }}/work
   KERNEL_DIR: ${{ github.workspace }}/work/kernel
-  SOURCE_URL: https://github.com/LineageOS/android_kernel_motorola_sm8250
-  SOURCE_COMMIT: c21b90c6860eeade8da37ea1212aa6135cf99e1f
+  SOURCE_URL: https://github.com/Albanel22/android_kernel_motorola_sm8250
+  SOURCE_COMMIT: a49e18994c494d71647f675df48e5c7349580747
   RESUKISU_URL: https://github.com/ReSukiSU/ReSukiSU.git
   RESUKISU_COMMIT: 0e4698951b8e0e1cb997e46f2049c691869a4f45
   JOBS: '2'
@@ -35,7 +35,7 @@ jobs:
           sudo apt-get install -y bc bison build-essential cpio curl flex file \
             gcc-aarch64-linux-gnu libelf-dev libssl-dev pahole perl python3 rsync
 
-      - name: Fetch pinned kernel
+      - name: Fetch pinned tactile fork kernel
         run: |
           set -Eeuo pipefail
           mkdir -p "$ROOT"
