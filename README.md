@@ -77,3 +77,16 @@ Ne flashez pas directement `Image` comme s’il s’agissait d’un `boot.img`. 
 - Image SHA-256: `26050b844189f543fd99f8e6027faea51229febb8332fbe8bc7f74974dfa52b9`
 
 Attention: cette validation utilise ReSukiSU `main`, car le commit historique `0e4698951b8e0e1cb997e46f2049c691869a4f45` n'est plus récupérable depuis les références publiques GitHub.
+
+## Génération automatique de `boot.img` signé AVB
+
+Le workflow reconstruit maintenant le `boot.img` complet à partir d'une image de référence : kernel compilé, ramdisk et DTB sont extraits puis réassemblés avec les outils AOSP épinglés. L'image est ensuite signée avec `avbtool` et la clé AVB fournie par GitHub Actions.
+
+Configurer dans **Settings → Secrets and variables → Actions → New repository secret** :
+
+- `KIEV_BOOT_IMAGE_URL` : URL HTTPS de l'image `boot.img` de référence correspondant exactement au téléphone/build ciblé ;
+- `KIEV_BOOT_IMAGE_SHA256` : SHA-256 de cette image de référence ;
+- `KIEV_AVB_KEY_B64` : clé privée AVB PEM encodée en base64 ;
+- `KIEV_AVB_ALGORITHM` : optionnel, par défaut `SHA256_RSA2048`.
+
+La clé privée ne doit jamais être commitée dans le dépôt. Le workflow s'arrête explicitement si les trois secrets obligatoires ne sont pas présents ou si le SHA-256 de l'image téléchargée ne correspond pas. La clé AVB doit être autorisée par le bootloader de l'appareil ; une signature avec une clé de test ne rend pas l'image flashable.

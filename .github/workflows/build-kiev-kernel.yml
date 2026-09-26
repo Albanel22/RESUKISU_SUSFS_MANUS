@@ -18,8 +18,10 @@ env:
   SOURCE_URL: https://github.com/LineageOS/android_kernel_motorola_sm8250
   SOURCE_COMMIT: c21b90c6860eeade8da37ea1212aa6135cf99e1f
   RESUKISU_URL: https://github.com/ReSukiSU/ReSukiSU.git
-  RESUKISU_COMMIT: 90b4a4c70f70c835b01c2be6deac58ee3c0cb4c2
+  RESUKISU_COMMIT: 0e4698951b8e0e1cb997e46f2049c691869a4f45
   JOBS: '2'
+  MKBOOTIMG_COMMIT: 40a19c4c5ffe8b86c6c61318c8aa4ffe35d6e7ad
+  AVBTOOL_COMMIT: ba9d77598670f4e221490aa0e7aa9b27564cf2fb
 
 jobs:
   build:
@@ -33,7 +35,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential cpio flex file \
+          sudo apt-get install -y bc bison build-essential cpio curl flex file \
             gcc-aarch64-linux-gnu libelf-dev libssl-dev pahole perl python3 rsync
 
       - name: Fetch pinned kernel
@@ -67,7 +69,49 @@ jobs:
           test "$(find "$KERNEL_DIR/out" -type f -name '*.ko' | wc -l)" -gt 0
           test ! -e "$KERNEL_DIR/fs/Makefile.rej"
 
-      - name: Package reproducible manual-hooks build artifacts (not a flashable boot.img)
+      - name: Rebuild and AVB-sign complete boot.img
+        env:
+          BOOT_IMAGE_URL: ${{ secrets.KIEV_BOOT_IMAGE_URL }}
+          BOOT_IMAGE_SHA256: ${{ secrets.KIEV_BOOT_IMAGE_SHA256 }}
+          AVB_KEY_B64: ${{ secrets.KIEV_AVB_KEY_B64 }}
+          AVB_ALGORITHM: ${{ secrets.KIEV_AVB_ALGORITHM }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$BOOT_IMAGE_URL" || { echo 'Missing secret KIEV_BOOT_IMAGE_URL' >&2; exit 1; }
+          test -n "$BOOT_IMAGE_SHA256" || { echo 'Missing secret KIEV_BOOT_IMAGE_SHA256' >&2; exit 1; }
+          test -n "$AVB_KEY_B64" || { echo 'Missing secret KIEV_AVB_KEY_B64' >&2; exit 1; }
+          mkdir -p "$ROOT/boot-tools" "$ROOT/boot-input" "$ROOT/artifacts"
+          curl --fail --location --retry 3 "$BOOT_IMAGE_URL" -o "$ROOT/boot-input/reference-boot.img"
+          printf '%s  %s\n' "$BOOT_IMAGE_SHA256" "$ROOT/boot-input/reference-boot.img" | sha256sum -c -
+          printf '%s' "$AVB_KEY_B64" | base64 --decode > "$ROOT/boot-tools/avb-key.pem"
+          chmod 600 "$ROOT/boot-tools/avb-key.pem"
+          curl --fail --location --retry 3 -o "$ROOT/boot-tools/unpack_bootimg.py" \
+            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/unpack_bootimg.py"
+          curl --fail --location --retry 3 -o "$ROOT/boot-tools/mkbootimg.py" \
+            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/mkbootimg.py"
+          curl --fail --location --retry 3 -o "$ROOT/boot-tools/avbtool.py" \
+            "https://raw.githubusercontent.com/LineageOS/android_external_avb/$AVBTOOL_COMMIT/avbtool.py"
+          mkdir -p "$ROOT/boot-tools/gki"
+          curl --fail --location --retry 3 -o "$ROOT/boot-tools/gki/generate_gki_certificate.py" \
+            "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/$MKBOOTIMG_COMMIT/gki/generate_gki_certificate.py"
+          printf '%s  %s\n' \
+            '021f2d960b2d3158a9df2ff6255f1140cebb09bc09f4886373438f2919559cd9' "$ROOT/boot-tools/mkbootimg.py" \
+            '50ef727dc41402430cf68933eaf5b7c7c71d91d2cc3cf908b2ea8e6e1faa4595' "$ROOT/boot-tools/unpack_bootimg.py" \
+            '5f1883a0834e8f8458d22104ce6e5becb7159ee0262fbda7d3d0fd0441de4720' "$ROOT/boot-tools/avbtool.py" | sha256sum -c -
+          python3 scripts/package_bootimg.py \
+            --reference "$ROOT/boot-input/reference-boot.img" \
+            --kernel "$KERNEL_DIR/out/arch/arm64/boot/Image" \
+            --unpack-tool "$ROOT/boot-tools/unpack_bootimg.py" \
+            --mkbootimg-tool "$ROOT/boot-tools/mkbootimg.py" \
+            --avbtool "$ROOT/boot-tools/avbtool.py" \
+            --avb-key "$ROOT/boot-tools/avb-key.pem" \
+            --avb-algorithm "${AVB_ALGORITHM:-SHA256_RSA2048}" \
+            --expected-reference-sha256 "$BOOT_IMAGE_SHA256" \
+            --output "$ROOT/artifacts/boot.img"
+          python3 "$ROOT/boot-tools/avbtool.py" info_image --image "$ROOT/artifacts/boot.img" > "$ROOT/artifacts/boot.avb-info.txt"
+          test "$(stat -c%s "$ROOT/artifacts/boot.img")" = "$(stat -c%s "$ROOT/boot-input/reference-boot.img")"
+
+      - name: Package reproducible manual-hooks build artifacts
         run: |
           set -Eeuo pipefail
           mkdir -p "$ROOT/artifacts"
@@ -85,12 +129,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: |
+            work/artifacts/boot.img
+            work/artifacts/boot.avb-info.txt
             work/artifacts/Image
             work/artifacts/kernel.config
             work/artifacts/KERNELRELEASE
             work/artifacts/modules.tar.gz
             work/artifacts/SHA256SUMS
             work/build.log
-
-      # Intentionally no boot.img upload. The previous Python repacker was
-      # incompatible with this device's Android boot v2 + AVB image.
