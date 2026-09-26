@@ -80,9 +80,9 @@ Attention: cette validation utilise ReSukiSU `main`, car le commit historique `0
 
 ## Artefacts de boot
 
-Le workflow télécharge et vérifie les images officielles kiev du 20 septembre 2026 : `boot.img` et `dtbo.img`. Il remplace le kernel dans le conteneur boot v2 et produit `boot-unsigned.img`. Le `dtb` intégré au boot v2 est conservé ; `dtbo.img` est une partition séparée et est publié séparément.
+Le workflow télécharge et vérifie les images kiev sauvegardées du 23 août 2026 : `boot.img` et `dtbo.img`. Le miroir officiel du 30 août n'étant plus disponible, cette base du 23 août est utilisée comme dernier artefact récupéré avant la période où le tactile a cessé de fonctionner. Le `dtb` intégré au boot v2 est conservé ; `dtbo.img` est une partition séparée et est publié séparément.
 
-Le workflow ne demande aucune clé ni aucun secret AVB. Les artefacts publiés sont : `boot-unsigned.img`, `dtbo.img`, `Image`, `kernel.config`, `KERNELRELEASE`, `modules.tar.gz`, `SHA256SUMS` et `build.log`.
+Le `boot.img` de référence fait exactement `100663296` octets (96 MiB), avec le SHA-256 `9e0efeba95ebe9e6c82a0c9e8623f0eff93fecb9d6b6cf521b756732f0f86737`. Le `dtbo.img` fait `8388608` octets, avec le SHA-256 `fd35046996bf488d0881aee9f353a8bbb55d389362132ad31a67572b6a8872d5`. Le workflow ne demande aucune clé ni aucun secret AVB. Les artefacts publiés sont : `boot-unsigned.img`, `dtbo.img`, `Image`, `kernel.config`, `KERNELRELEASE`, `modules.tar.gz`, `SHA256SUMS` et `build.log`.
 
 
 ## Source kernel tactile

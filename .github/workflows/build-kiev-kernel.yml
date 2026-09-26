@@ -21,10 +21,10 @@ env:
   RESUKISU_COMMIT: 0e4698951b8e0e1cb997e46f2049c691869a4f45
   JOBS: '2'
   MKBOOTIMG_COMMIT: 40a19c4c5ffe8b86c6c61318c8aa4ffe35d6e7ad
-  BOOT_IMAGE_URL: https://mirrorbits.lineageos.org/full/kiev/20260920/boot.img
-  BOOT_IMAGE_SHA256: f7938eb61b59df097d1720dc20495db9ad663a3491f94fb3759b1106a5579c3e
-  DTBO_IMAGE_URL: https://mirrorbits.lineageos.org/full/kiev/20260920/dtbo.img
-  DTBO_IMAGE_SHA256: 323789569f56ba30d00f1372e6f4965702a5a294c7253a81a9ff7f0a7e984e1c
+  BOOT_IMAGE_URL: https://drive.usercontent.google.com/download?id=1VGr0svHFa5wO7gqrixXYIxiID_pL62Fo&export=download&confirm=t
+  BOOT_IMAGE_SHA256: 9e0efeba95ebe9e6c82a0c9e8623f0eff93fecb9d6b6cf521b756732f0f86737
+  DTBO_IMAGE_URL: https://drive.usercontent.google.com/download?id=10T-3NcfbZ4awKU7fIBx565CKknOCz_pi&export=download&confirm=t
+  DTBO_IMAGE_SHA256: fd35046996bf488d0881aee9f353a8bbb55d389362132ad31a67572b6a8872d5
 
 jobs:
   build:
@@ -104,6 +104,8 @@ jobs:
           cp "$ROOT/boot-input/dtbo.img" "$ROOT/artifacts/dtbo.img"
           test -s "$ROOT/artifacts/boot-unsigned.img"
           test -s "$ROOT/artifacts/dtbo.img"
+          test "$(stat -c '%s' "$ROOT/artifacts/boot-unsigned.img")" -le 100663296
+          test "$(stat -c '%s' "$ROOT/artifacts/dtbo.img")" -eq 8388608
 
       - name: Package reproducible manual-hooks build artifacts
         run: |
