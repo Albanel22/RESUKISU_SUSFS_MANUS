@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/build_variant_a.sh'
+      - 'scripts/apply_tactile_reference.sh'
       - 'scripts/build.sh'
       - 'scripts/prepare.sh'
       - 'scripts/package_bootimg.py'
